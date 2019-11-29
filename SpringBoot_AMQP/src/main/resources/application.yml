@@ -1,0 +1,17 @@
+spring:
+  rabbitmq:
+    host: 192.168.2.10
+    port: 5672
+    username: admin
+    password: admin
+    virtual-host: /lypgod
+
+---
+spring:
+  profiles: fair
+  rabbitmq:
+    listener:
+      simple:
+        prefetch: 1
+        acknowledge-mode: manual
+
