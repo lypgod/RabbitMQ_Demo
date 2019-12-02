@@ -1,15 +1,15 @@
 package com.lypgod.demo;
 
-import com.rabbitmq.client.BuiltinExchangeType;
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.*;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.Random;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -34,6 +34,10 @@ class RabbitMqUtils {
     static final String ROUTING_KEY_GOODS_ADD = "goods.add";
     static final String ROUTING_KEY_GOODS_DELETE = "goods.delete";
     static final String ROUTING_KEY_GOODS_ALL = "goods.#";
+
+    static final String EXCHANGE_NAME_DLX = "exchange_dlx";
+    static final String QUEUE_NAME_DLX = "dlx_queue";
+    static final String ROUTING_KEY_DLX = "dlx.#";
 
     static Connection getDefaultConnection() throws IOException, TimeoutException {
         // 创建连接工厂对象
@@ -82,6 +86,25 @@ class RabbitMqUtils {
         TimeUnit.HOURS.sleep(1);
     }
 
+    static void listeningDlxQueue(Channel channel, String queueName, boolean autoAck) throws IOException, InterruptedException {
+        channel.basicConsume(queueName, autoAck,
+                (consumerTag, message) -> {
+                    System.out.println("----- received message -----");
+                    System.out.println("ConsumerTag: " + consumerTag);
+                    System.out.println("DeliveryTag: " + message.getEnvelope().getDeliveryTag());
+                    System.out.println("交换机名称: " + message.getEnvelope().getExchange());
+                    System.out.println("路由键: " + message.getEnvelope().getRoutingKey());
+                    System.out.println("properties: " + message.getProperties());
+                    System.out.println("收到消息: " + new String(message.getBody(), StandardCharsets.UTF_8));
+                    System.out.println("----------------------------");
+                },
+                consumerTag -> {
+
+                });
+
+        TimeUnit.HOURS.sleep(1);
+    }
+
     static void declareQueue(Channel channel, String queueName) throws IOException {
         /*
          * 声明队列
@@ -117,5 +140,93 @@ class RabbitMqUtils {
     static void sendMessageToExchange(Channel channel, String exchangeName, String routingKey, String message) throws IOException {
         channel.basicPublish(exchangeName, routingKey, null, message.getBytes());
         System.out.println("Message sent to [" + exchangeName + "], with routing key [" + routingKey + "]: " + message);
+    }
+
+    static void sendMessage(Channel channel, String exchangeName, String routingKey, AMQP.BasicProperties properties, String message) throws IOException {
+        channel.basicPublish(exchangeName, routingKey, true, properties, message.getBytes());
+        System.out.println("Message sent to [" + exchangeName + "], with routing key [" + routingKey + "]: " + message);
+    }
+
+    static void sendMessageTx(Channel channel, String routingKey, String message) {
+        try {
+            channel.txSelect();
+            channel.basicPublish("", routingKey, null, message.getBytes());
+            channel.txCommit();
+            System.out.println("Message sent to " + routingKey + ": " + message);
+        } catch (IOException e) {
+            try {
+                channel.txRollback();
+                System.out.println("Message [" + message + "] rolled back.");
+            } catch (IOException ex) {
+                System.out.println("Message [" + message + "] rollback failed!");
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    static void sendMessageConfirmWait(Channel channel, String routingKey, String message) throws IOException {
+        channel.confirmSelect();
+        channel.basicPublish("", routingKey, null, message.getBytes());
+        try {
+            if (channel.waitForConfirms()) {
+                System.out.println("Message sent to " + routingKey + ": " + message);
+            } else {
+                System.out.println("Message [" + message + "] confirmed failure!");
+            }
+        } catch (InterruptedException e) {
+            System.out.println("Message [" + message + "] wait for confirm interrupted!");
+            e.printStackTrace();
+        }
+    }
+
+    static void sendMessageConfirmCallback(Channel channel, String routingKey, String message) throws IOException, InterruptedException {
+        // channel设置为confirm模式
+        channel.confirmSelect();
+        // 记录未确认的消息标识
+        final SortedSet<Long> unconfirmedSet = Collections.synchronizedSortedSet(new TreeSet<>());
+        // 通道添加监听
+        channel.addConfirmListener(new ConfirmListener() {
+            /**
+             * 处理返回确认成功
+             * @param deliveryTag 如果是多条，这个就是最后一条消息的tag
+             * @param multiple 是否多条
+             */
+            @Override
+            public void handleAck(long deliveryTag, boolean multiple) {
+                System.out.println("Broker返回消息发送成功确认, deliveryTag：" + deliveryTag + "， multiple：" + multiple);
+
+                // 批量发送ack确认，客户端就把此次消息序号之前的记录全删除，代表这个消息之前的消息broker都已接收到
+                if (multiple) {
+                    unconfirmedSet.headSet(deliveryTag + 1).clear();
+                } else {
+                    // broker单个返回ack确认
+                    unconfirmedSet.remove(deliveryTag);
+                }
+            }
+            /**
+             * 处理返回确认消息丢失
+             * @param deliveryTag 如果是多条，这个就是最后一条消息的tag
+             * @param multiple 是否多条
+             */
+            @Override
+            public void handleNack(long deliveryTag, boolean multiple) {
+                System.out.println("Broker返回消息丢失, deliveryTag：" + deliveryTag + "， multiple：" + multiple);
+            }
+        });
+
+        for (int i = 0; i < 10; i++) {
+            String msg = "Confirm callback message [" + i + "]";
+            long tag = channel.getNextPublishSeqNo();
+            //发送消息
+            channel.basicPublish("", routingKey, null, msg.getBytes());
+
+            System.out.println("Confirm callback message [" + i + "] has been sent with tag: " + tag);
+            unconfirmedSet.add(tag);
+
+            TimeUnit.SECONDS.sleep(1);
+        }
+
+        // 等待回调确认
+        TimeUnit.SECONDS.sleep(2);
     }
 }

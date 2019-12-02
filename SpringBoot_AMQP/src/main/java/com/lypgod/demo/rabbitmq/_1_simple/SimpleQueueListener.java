@@ -1,11 +1,11 @@
 package com.lypgod.demo.rabbitmq._1_simple;
 
-import com.lypgod.demo.rabbitmq.util.RabbitMqConfig;
+import com.lypgod.demo.rabbitmq.util.R00_General_Config;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.amqp.rabbit.annotation.RabbitHandler;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 
-import static com.lypgod.demo.rabbitmq.util.RabbitMqConfig.QUEUE_NAME_SIMPLE;
+import static com.lypgod.demo.rabbitmq.util.R01_Simple_Config.QUEUE_NAME_SIMPLE;
 
 /**
  * @author lypgod
@@ -15,6 +15,6 @@ import static com.lypgod.demo.rabbitmq.util.RabbitMqConfig.QUEUE_NAME_SIMPLE;
 public class SimpleQueueListener {
     @RabbitHandler
     public void receive(String message) {
-        RabbitMqConfig.process(0, message);
+        R00_General_Config.process(0, message);
     }
 }

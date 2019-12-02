@@ -9,18 +9,17 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
-import static com.lypgod.demo.RabbitMqUtils.QUEUE_NAME_WORK;
+import static com.lypgod.demo.RabbitMqUtils.QUEUE_NAME_SIMPLE;
 
-public class T2_RoundRobinTest {
+public class T09_ConformCallbackTest {
     private static Connection connection;
     private static Channel channel;
-
 
     @BeforeClass
     public static void beforeClass() throws IOException, TimeoutException {
         connection = RabbitMqUtils.getDefaultConnection();
         channel = connection.createChannel();
-        RabbitMqUtils.declareQueue(channel, QUEUE_NAME_WORK);
+        RabbitMqUtils.declareQueue(channel, QUEUE_NAME_SIMPLE);
     }
 
     @AfterClass
@@ -30,19 +29,12 @@ public class T2_RoundRobinTest {
     }
 
     @Test
-    public void roundRobinListener1() throws IOException, InterruptedException {
-        RabbitMqUtils.listeningQueue(channel, QUEUE_NAME_WORK, true);
+    public void simpleQueueListener() throws IOException, InterruptedException {
+        RabbitMqUtils.listeningQueue(channel, QUEUE_NAME_SIMPLE, true);
     }
 
     @Test
-    public void roundRobinListener2() throws IOException, InterruptedException {
-        RabbitMqUtils.listeningQueue(channel, QUEUE_NAME_WORK, true);
-    }
-
-    @Test
-    public void sendRoundRobinMessage() throws IOException {
-        for (int i = 0; i < 10; i++) {
-            RabbitMqUtils.sendMessage(channel, QUEUE_NAME_WORK,"Work Message " + i);
-        }
+    public void sendSimpleMessage() throws IOException, InterruptedException {
+        RabbitMqUtils.sendMessageConfirmCallback(channel, QUEUE_NAME_SIMPLE, "Simple Message");
     }
 }

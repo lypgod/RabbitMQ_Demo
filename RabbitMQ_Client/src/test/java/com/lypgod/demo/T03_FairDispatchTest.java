@@ -11,7 +11,7 @@ import java.util.concurrent.TimeoutException;
 
 import static com.lypgod.demo.RabbitMqUtils.QUEUE_NAME_WORK;
 
-public class T3_FairDispatchTest {
+public class T03_FairDispatchTest {
     private static Connection connection;
     private static Channel channel;
 

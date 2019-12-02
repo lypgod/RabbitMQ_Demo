@@ -12,7 +12,7 @@ import java.util.concurrent.TimeoutException;
 
 import static com.lypgod.demo.RabbitMqUtils.*;
 
-public class T4_FanoutExchangeTest {
+public class T04_FanoutExchangeTest {
     private static Connection connection;
     private static Channel channel;
 

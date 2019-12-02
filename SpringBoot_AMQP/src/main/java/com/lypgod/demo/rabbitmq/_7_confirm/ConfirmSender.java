@@ -1,4 +1,4 @@
-package com.lypgod.demo.rabbitmq._5_direct;
+package com.lypgod.demo.rabbitmq._7_confirm;
 
 import lombok.extern.log4j.Log4j2;
 import org.springframework.amqp.core.DirectExchange;
@@ -8,10 +8,11 @@ import org.springframework.scheduling.annotation.Scheduled;
 import javax.annotation.Resource;
 import java.util.Random;
 
-import static com.lypgod.demo.rabbitmq.util.R05_Direct_Config.*;
+import static com.lypgod.demo.rabbitmq.util.R07_Confirm_Config.*;
+
 
 @Log4j2
-public class DirectSender {
+public class ConfirmSender {
     @Resource
     private RabbitTemplate rabbitTemplate;
     @Resource
@@ -25,6 +26,6 @@ public class DirectSender {
         int random = new Random().nextInt(3);
         String message = ("Direct Message " + index++ + " [" + keys[random] + "]");
         log.warn("message sent ==> [{}]", message);
-        this.rabbitTemplate.convertAndSend(directExchange.getName(), keys[random], message);
+        this.rabbitTemplate.convertAndSend(directExchange.getName(), keys[random] + "-", message);
     }
 }

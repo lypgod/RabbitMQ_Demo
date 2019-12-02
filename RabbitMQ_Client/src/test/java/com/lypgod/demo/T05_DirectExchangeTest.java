@@ -13,7 +13,7 @@ import java.util.concurrent.TimeoutException;
 
 import static com.lypgod.demo.RabbitMqUtils.*;
 
-public class T5_DirectExchangeTest {
+public class T05_DirectExchangeTest {
     private static Connection connection;
     private static Channel channel;
 

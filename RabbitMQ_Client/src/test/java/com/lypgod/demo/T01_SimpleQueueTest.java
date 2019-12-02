@@ -11,7 +11,7 @@ import java.util.concurrent.TimeoutException;
 
 import static com.lypgod.demo.RabbitMqUtils.QUEUE_NAME_SIMPLE;
 
-public class T1_SimpleQueueTest {
+public class T01_SimpleQueueTest {
     private static Connection connection;
     private static Channel channel;
 

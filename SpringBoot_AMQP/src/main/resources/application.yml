@@ -15,3 +15,18 @@ spring:
         prefetch: 1
         acknowledge-mode: manual
 
+---
+spring:
+  profiles: confirm
+  rabbitmq:
+    publisher-confirm-type: correlated
+    publisher-returns: true
+
+---
+spring:
+  profiles: ack
+  rabbitmq:
+    listener:
+      simple:
+        prefetch: 1
+        acknowledge-mode: manual
